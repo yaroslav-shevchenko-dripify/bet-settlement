@@ -60,7 +60,7 @@ curl 'http://localhost:8082/api/v1/bets?eventId=a1f0c3d2-0000-4000-8000-00000000
 
 ## Tests
 
-Java 17+ and Docker are required:
+Java 25 and Docker are required:
 
 ```bash
 ./gradlew check
