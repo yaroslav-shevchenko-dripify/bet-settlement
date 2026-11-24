@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -27,7 +26,7 @@ class BetController {
   @Operation(summary = "Find bets of an event")
   @ApiResponse(responseCode = "200", description = "Bets of the event, empty if there are none")
   @ApiResponse(responseCode = "400", description = "Missing or invalid event id")
-  ResponseEntity<List<BetDto>> findBets(@RequestParam UUID eventId) {
-    return ResponseEntity.ok(betService.findBetsByEventId(eventId));
+  List<BetDto> findBets(@RequestParam UUID eventId) {
+    return betService.findBetsByEventId(eventId);
   }
 }

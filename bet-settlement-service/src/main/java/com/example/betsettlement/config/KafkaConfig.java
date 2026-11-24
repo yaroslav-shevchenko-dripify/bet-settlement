@@ -8,7 +8,6 @@ import org.springframework.util.backoff.ExponentialBackOff;
 @Configuration
 public class KafkaConfig {
 
-  // retries until RocketMQ is available again, malformed messages are logged and skipped
   @Bean
   DefaultErrorHandler kafkaErrorHandler() {
     return new DefaultErrorHandler(new ExponentialBackOff());
