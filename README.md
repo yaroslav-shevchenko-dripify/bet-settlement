@@ -1,8 +1,6 @@
 # Bet Settlement
 
-```
-POST /event-outcomes -> event-outcome-service -> Kafka event-outcomes -> bet-settlement-service <-> RocketMQ bet-settlements
-```
+![Diagram](docs/diagram.png)
 
 | Service | Does |
 |---|---|
