@@ -1,29 +1,49 @@
 # Bet Settlement
 
-## Requirements
+## Prerequisites
 
-- Docker
+- Docker and Docker Compose
 - Java 25 and Gradle, only to run the tests (the Gradle wrapper is included)
 
-## Overview
+## Technical Stack
+
+- Java 25
+- Gradle
+- Spring Boot 4.2.0
+- Spring Data JDBC
+- H2 (in-memory)
+- Flyway
+- Kafka
+- RocketMQ
+- OpenAPI
+
+## Design
+
+Two services:
+
+- **event-outcome-service**: publishes event outcomes to Kafka
+- **bet-settlement-service**: finds the bets of the event, sends them to RocketMQ, consumes RocketMQ and settles the bets
 
 ![Diagram](docs/diagram.png)
 
-| Service | Does |
-|---|---|
-| `event-outcome-service` | Publishes event outcomes to Kafka |
-| `bet-settlement-service` | Finds the bets of the event, sends them to RocketMQ, consumes RocketMQ and settles the bets |
+### Justification
 
-## Run
+Outcomes can come from different sources, so publishing them is separate from settling the bets.
+
+## Getting Started
 
 ```bash
 docker compose up --build
 ```
 
-- `event-outcome-service`: http://localhost:8080/api/v1/swagger-ui.html
-- `bet-settlement-service`: http://localhost:8082/api/v1/swagger-ui.html
+## API Documentation
 
-## Use
+### Swagger UI
+
+- event-outcome-service: http://localhost:8080/api/v1/swagger-ui.html
+- bet-settlement-service: http://localhost:8082/api/v1/swagger-ui.html
+
+### cURL Example
 
 Demo bets are added on startup. Publish an event outcome:
 
@@ -43,26 +63,20 @@ Check that its bets are settled (the first settlement takes about 30 seconds, wh
 curl 'http://localhost:8082/api/v1/bets?eventId=a1f0c3d2-0000-4000-8000-000000000001'
 ```
 
-## Design
-
-- **Two services**: outcomes can come from different sources, so publishing is separate from the bets. Matching and settlement share the bets, so they are one service.
-- **RocketMQ** carries one message per bet, so each bet is settled and retried independently.
-- **Duplicates** are safe: only `PENDING` bets are sent and settled.
-- **Failures**: if RocketMQ is not available, the outcome is retried until it is. Malformed outcomes are logged and skipped. Failed settlements are redelivered by RocketMQ.
-
-## Assumptions
-
-- There are no odds in the task, so a bet becomes `WON` or `LOST` without a payout.
-- An outcome applies to all markets of the event, because it has no market id.
-- An event has one outcome. If two different winners are published, its bets can be settled with either.
-
-## Limitations
-
-- All pending bets of an event are loaded and sent one by one. A large event would need paging.
-- H2 is in-memory, so there is one instance of `bet-settlement-service` and a restart resets the bets.
-
-## Tests
+## Code Quality
 
 ```bash
 ./gradlew check
+```
+
+### Code Coverage
+
+JaCoCo requires at least 80% coverage. Reports are generated in `build/reports/jacoco/test/html/` of each service.
+
+### Code Formatting
+
+Spotless checks google-java-format. To apply it:
+
+```bash
+./gradlew spotlessApply
 ```
