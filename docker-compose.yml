@@ -1,0 +1,120 @@
+services:
+  event-outcome-service:
+    build:
+      context: .
+      args:
+        SERVICE: event-outcome-service
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/api/v1/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    networks:
+      - app-network
+
+  bet-settlement-service:
+    build:
+      context: .
+      args:
+        SERVICE: bet-settlement-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+      ROCKETMQ_NAME_SERVER: "rocketmq-namesrv:9876"
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+      rocketmq-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8082/api/v1/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    networks:
+      - app-network
+
+  kafka:
+    image: apache/kafka:4.4.0
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_HEAP_OPTS: "-Xms256m -Xmx512m"
+    healthcheck:
+      test: ["CMD", "/opt/kafka/bin/kafka-broker-api-versions.sh", "--bootstrap-server", "localhost:9092"]
+      interval: 5s
+      timeout: 10s
+      retries: 20
+    networks:
+      - app-network
+
+  kafka-init:
+    image: apache/kafka:4.4.0
+    command: /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic event-outcomes --partitions 3
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  rocketmq-namesrv:
+    image: apache/rocketmq:5.5.0
+    command: sh mqnamesrv
+    environment:
+      JAVA_OPT_EXT: "-Xms128m -Xmx256m"
+    healthcheck:
+      test: ["CMD", "bash", "-c", "</dev/tcp/localhost/9876"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - app-network
+
+  rocketmq-broker:
+    image: apache/rocketmq:5.5.0
+    command: sh mqbroker -n rocketmq-namesrv:9876 -c /etc/rocketmq/broker.conf
+    environment:
+      JAVA_OPT_EXT: "-Xms256m -Xmx512m"
+    volumes:
+      - ./docker/broker.conf:/etc/rocketmq/broker.conf:ro
+    depends_on:
+      rocketmq-namesrv:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "sh mqadmin clusterList -n rocketmq-namesrv:9876 | grep -q broker-a"]
+      interval: 10s
+      timeout: 15s
+      retries: 20
+    networks:
+      - app-network
+
+  rocketmq-init:
+    image: apache/rocketmq:5.5.0
+    command: sh mqadmin updateTopic -n rocketmq-namesrv:9876 -c DefaultCluster -t bet-settlements
+    depends_on:
+      rocketmq-broker:
+        condition: service_healthy
+    networks:
+      - app-network
+
+networks:
+  app-network:
