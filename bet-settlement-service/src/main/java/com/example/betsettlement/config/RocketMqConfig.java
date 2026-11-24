@@ -17,7 +17,6 @@ public class RocketMqConfig {
   DefaultMQProducer rocketMqProducer(RocketMqProperties properties) {
     var producer = new DefaultMQProducer(properties.producerGroup());
     producer.setNamesrvAddr(properties.nameServer());
-    producer.setSendMsgTimeout((int) properties.sendTimeout().toMillis());
     return producer;
   }
 
@@ -28,7 +27,6 @@ public class RocketMqConfig {
     var consumer = new DefaultMQPushConsumer(properties.consumerGroup());
     consumer.setNamesrvAddr(properties.nameServer());
     consumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_FIRST_OFFSET);
-    consumer.setMaxReconsumeTimes(properties.maxReconsumeTimes());
     consumer.subscribe(properties.topic(), "*");
     consumer.registerMessageListener(betSettlementConsumer);
     return consumer;
