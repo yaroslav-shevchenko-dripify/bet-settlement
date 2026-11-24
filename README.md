@@ -1,5 +1,12 @@
 # Bet Settlement
 
+## Requirements
+
+- Docker
+- Java 25 and Gradle, only to run the tests (the Gradle wrapper is included)
+
+## Overview
+
 ![Diagram](docs/diagram.png)
 
 | Service | Does |
@@ -9,16 +16,12 @@
 
 ## Run
 
-Only Docker is required:
-
 ```bash
-docker compose up --build -d --wait
+docker compose up --build
 ```
 
-| Service | Swagger UI | Health check |
-|---|---|---|
-| `event-outcome-service` | http://localhost:8080/api/v1/swagger | http://localhost:8080/api/v1/actuator/health |
-| `bet-settlement-service` | http://localhost:8082/api/v1/swagger | http://localhost:8082/api/v1/actuator/health |
+- `event-outcome-service`: http://localhost:8080/api/v1/swagger-ui.html
+- `bet-settlement-service`: http://localhost:8082/api/v1/swagger-ui.html
 
 ## Use
 
@@ -34,7 +37,7 @@ curl -i -X POST http://localhost:8080/api/v1/event-outcomes \
   }'
 ```
 
-Check that its bets are settled:
+Check that its bets are settled (the first settlement takes about 30 seconds, while RocketMQ creates its topic):
 
 ```bash
 curl 'http://localhost:8082/api/v1/bets?eventId=a1f0c3d2-0000-4000-8000-000000000001'
@@ -45,7 +48,7 @@ curl 'http://localhost:8082/api/v1/bets?eventId=a1f0c3d2-0000-4000-8000-00000000
 - **Two services**: outcomes can come from different sources, so publishing is separate from the bets. Matching and settlement share the bets, so they are one service.
 - **RocketMQ** carries one message per bet, so each bet is settled and retried independently.
 - **Duplicates** are safe: only `PENDING` bets are sent and settled.
-- **Failures**: if RocketMQ is not available, the outcome is retried until it is. Malformed outcomes are logged and skipped. Failed settlements are redelivered up to 5 times, then moved to the dead letter queue.
+- **Failures**: if RocketMQ is not available, the outcome is retried until it is. Malformed outcomes are logged and skipped. Failed settlements are redelivered by RocketMQ.
 
 ## Assumptions
 
@@ -59,8 +62,6 @@ curl 'http://localhost:8082/api/v1/bets?eventId=a1f0c3d2-0000-4000-8000-00000000
 - H2 is in-memory, so there is one instance of `bet-settlement-service` and a restart resets the bets.
 
 ## Tests
-
-Java 25 and Docker are required:
 
 ```bash
 ./gradlew check
