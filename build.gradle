@@ -1,0 +1,87 @@
+plugins {
+    id 'org.springframework.boot' version '4.2.0' apply false
+    id 'io.spring.dependency-management' version '1.1.7' apply false
+    id 'com.diffplug.spotless' version '8.12.0' apply false
+}
+
+ext {
+    springdocVersion = '3.2.1'
+}
+
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'jacoco'
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'io.spring.dependency-management'
+    apply plugin: 'com.diffplug.spotless'
+
+    group = 'com.example'
+    version = '1.0.0'
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(25)
+        }
+    }
+
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+        implementation 'org.springframework.boot:spring-boot-starter-kafka'
+        implementation 'org.springframework.boot:spring-boot-starter-actuator'
+        implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
+
+        compileOnly 'org.projectlombok:lombok'
+        annotationProcessor 'org.projectlombok:lombok'
+
+        testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+        testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+        testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
+        testImplementation 'org.testcontainers:testcontainers-kafka'
+        testImplementation 'org.awaitility:awaitility'
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    }
+
+    jar {
+        enabled = false
+    }
+
+    test {
+        useJUnitPlatform()
+        jvmArgs '-XX:+EnableDynamicAgentLoading'
+        finalizedBy jacocoTestReport
+    }
+
+    jacocoTestReport {
+        dependsOn test
+    }
+
+    jacocoTestCoverageVerification {
+        dependsOn test
+
+        violationRules {
+            rule {
+                limit {
+                    minimum = 0.8
+                }
+            }
+        }
+    }
+
+    check.dependsOn jacocoTestCoverageVerification
+
+    spotless {
+        encoding 'UTF-8'
+
+        java {
+            target 'src/*/java/**/*.java'
+            removeUnusedImports()
+            trimTrailingWhitespace()
+            endWithNewline()
+            googleJavaFormat()
+        }
+    }
+}
