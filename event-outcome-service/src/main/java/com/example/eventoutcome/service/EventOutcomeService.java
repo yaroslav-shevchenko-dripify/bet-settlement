@@ -6,13 +6,10 @@ import static lombok.AccessLevel.PRIVATE;
 import com.example.eventoutcome.config.EventOutcomeProperties;
 import com.example.eventoutcome.exception.EventOutcomePublishingException;
 import com.example.eventoutcome.model.dto.EventOutcomeDto;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.KafkaException;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
@@ -30,20 +27,9 @@ public class EventOutcomeService {
           .send(properties.topic(), eventOutcome.eventId().toString(), eventOutcome)
           .get(properties.sendTimeout().toMillis(), TimeUnit.MILLISECONDS);
       log.info("Event outcome published: {}", eventOutcome);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw publishingException(eventOutcome, e);
-    } catch (ExecutionException
-        | TimeoutException
-        | KafkaException
-        | org.apache.kafka.common.KafkaException e) {
-      throw publishingException(eventOutcome, e);
+    } catch (Exception e) {
+      throw new EventOutcomePublishingException(
+          format("Outcome of event with id %s was not published", eventOutcome.eventId()), e);
     }
-  }
-
-  private EventOutcomePublishingException publishingException(
-      EventOutcomeDto eventOutcome, Exception cause) {
-    return new EventOutcomePublishingException(
-        format("Outcome of event with id %s was not published", eventOutcome.eventId()), cause);
   }
 }

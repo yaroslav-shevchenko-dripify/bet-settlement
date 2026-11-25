@@ -1,8 +1,6 @@
 package com.example.betsettlement;
 
 import com.github.dockerjava.api.command.InspectContainerResponse;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.ServerSocket;
 import java.time.Duration;
 import java.util.List;
@@ -37,10 +35,7 @@ class RocketMqContainer extends GenericContainer<RocketMqContainer> {
   protected void containerIsStarted(InspectContainerResponse containerInfo) {
     try {
       execInContainer("sh", "-c", CREATE_TOPIC_COMMAND);
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
+    } catch (Exception e) {
       throw new IllegalStateException("Topic was not created", e);
     }
   }
@@ -59,7 +54,7 @@ class RocketMqContainer extends GenericContainer<RocketMqContainer> {
   private int findFreePort() {
     try (var socket = new ServerSocket(0)) {
       return socket.getLocalPort();
-    } catch (IOException e) {
+    } catch (Exception e) {
       throw new IllegalStateException("No free port for RocketMQ broker", e);
     }
   }

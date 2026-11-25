@@ -9,12 +9,9 @@ import com.example.betsettlement.model.message.BetSettlementMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.rocketmq.client.exception.MQBrokerException;
-import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.client.producer.DefaultMQProducer;
 import org.apache.rocketmq.client.producer.SendStatus;
 import org.apache.rocketmq.common.message.Message;
-import org.apache.rocketmq.remoting.exception.RemotingException;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -31,26 +28,21 @@ public class BetSettlementProducer {
     var message = new Message(properties.topic(), jsonMapper.writeValueAsBytes(betSettlement));
     message.setKeys(betSettlement.betId().toString());
 
-    try {
-      var sendStatus = rocketMqProducer.send(message).getSendStatus();
-      if (sendStatus != SendStatus.SEND_OK) {
-        throw new BetSettlementPublishingException(
-            format(
-                "Settlement of bet with id %s was sent with %s",
-                betSettlement.betId(), sendStatus));
-      }
-      log.info("Bet settlement sent: {}", betSettlement);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw publishingException(betSettlement, e);
-    } catch (MQClientException | RemotingException | MQBrokerException e) {
-      throw publishingException(betSettlement, e);
+    var sendStatus = sendMessage(betSettlement, message);
+    if (sendStatus != SendStatus.SEND_OK) {
+      throw new BetSettlementPublishingException(
+          format(
+              "Settlement of bet with id %s was sent with %s", betSettlement.betId(), sendStatus));
     }
+    log.info("Bet settlement sent: {}", betSettlement);
   }
 
-  private BetSettlementPublishingException publishingException(
-      BetSettlementMessage betSettlement, Exception cause) {
-    return new BetSettlementPublishingException(
-        format("Settlement of bet with id %s was not sent", betSettlement.betId()), cause);
+  private SendStatus sendMessage(BetSettlementMessage betSettlement, Message message) {
+    try {
+      return rocketMqProducer.send(message).getSendStatus();
+    } catch (Exception e) {
+      throw new BetSettlementPublishingException(
+          format("Settlement of bet with id %s was not sent", betSettlement.betId()), e);
+    }
   }
 }

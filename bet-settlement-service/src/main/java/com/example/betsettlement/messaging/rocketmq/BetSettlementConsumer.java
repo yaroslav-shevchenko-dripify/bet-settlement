@@ -29,7 +29,7 @@ public class BetSettlementConsumer implements MessageListenerConcurrently {
     try {
       messages.forEach(this::settleBet);
       return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
-    } catch (RuntimeException e) {
+    } catch (Exception e) {
       log.warn("Bet settlement failed, message will be redelivered", e);
       return ConsumeConcurrentlyStatus.RECONSUME_LATER;
     }
