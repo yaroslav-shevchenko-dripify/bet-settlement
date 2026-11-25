@@ -31,7 +31,6 @@ subprojects {
     dependencies {
         implementation 'org.springframework.boot:spring-boot-starter-webmvc'
         implementation 'org.springframework.boot:spring-boot-starter-kafka'
-        implementation 'org.springframework.boot:spring-boot-starter-actuator'
         implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
 
         compileOnly 'org.projectlombok:lombok'
@@ -39,9 +38,7 @@ subprojects {
 
         testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
         testImplementation 'org.springframework.boot:spring-boot-testcontainers'
-        testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
         testImplementation 'org.testcontainers:testcontainers-kafka'
-        testImplementation 'org.awaitility:awaitility'
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     }
 
