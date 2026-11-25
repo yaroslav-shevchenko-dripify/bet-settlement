@@ -18,8 +18,7 @@ class RocketMqContainer extends GenericContainer<RocketMqContainer> {
     var brokerPort = findFreePort();
 
     withExposedPorts(NAME_SERVER_PORT);
-    // clients connect to the address advertised by the broker, so both ports must be equal
-    setPortBindings(List.of("%d:%d".formatted(brokerPort, brokerPort)));
+    bindToSameHostPort(brokerPort);
     withEnv("JAVA_OPT_EXT", "-Xms256m -Xmx512m");
     withCommand("sh", "-c", startCommand(brokerPort));
     waitingFor(
@@ -38,6 +37,10 @@ class RocketMqContainer extends GenericContainer<RocketMqContainer> {
     } catch (Exception e) {
       throw new IllegalStateException("Topic was not created", e);
     }
+  }
+
+  private void bindToSameHostPort(int port) {
+    setPortBindings(List.of("%d:%d".formatted(port, port)));
   }
 
   private String startCommand(int brokerPort) {

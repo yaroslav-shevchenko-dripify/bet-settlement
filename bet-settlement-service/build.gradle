@@ -1,11 +1,11 @@
-// RocketMQ is built against Netty 4.1, Spring Boot would force 4.2
-ext['netty.version'] = '4.1.130.Final'
-
 def versions = [
         rocketmq                : '5.5.1',
+        rocketmq_netty          : '4.1.130.Final',
         mapstruct               : '1.6.3',
         mapstruct_lombok_binding: '0.2.0'
 ]
+
+ext['netty.version'] = versions.rocketmq_netty
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
